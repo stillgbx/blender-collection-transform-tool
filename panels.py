@@ -33,8 +33,26 @@ class BCTT_PT_main(Panel):
 
         layout.separator(factor=0.5)
 
-        # ── Pivot — mirrors the Blender viewport header selector ──────────────
-        layout.prop(context.scene.tool_settings, "transform_pivot_point", text="Pivot")
+        # ── Pivot — read-only info from the Blender viewport header ─────────────
+        _PIVOT_ICON = {
+            'BOUNDING_BOX_CENTER': 'PIVOT_BOUNDBOX',
+            'CURSOR':              'PIVOT_CURSOR',
+            'INDIVIDUAL_ORIGINS':  'PIVOT_INDIVIDUAL',
+            'MEDIAN_POINT':        'PIVOT_MEDIAN',
+            'ACTIVE_ELEMENT':      'PIVOT_ACTIVE',
+        }
+        _PIVOT_LABEL = {
+            'BOUNDING_BOX_CENTER': "Bounding Box Center",
+            'CURSOR':              "3D Cursor",
+            'INDIVIDUAL_ORIGINS':  "Individual Origins",
+            'MEDIAN_POINT':        "Median Point",
+            'ACTIVE_ELEMENT':      "Active Element",
+        }
+        pivot_id = context.scene.tool_settings.transform_pivot_point
+        layout.label(
+            text=f"Pivot: {_PIVOT_LABEL.get(pivot_id, pivot_id)}",
+            icon=_PIVOT_ICON.get(pivot_id, 'PIVOT_MEDIAN'),
+        )
 
         layout.separator(factor=0.5)
 
