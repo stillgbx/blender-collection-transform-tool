@@ -7,7 +7,23 @@ Location: View3D > Sidebar (N) > Collection Transform
 import bpy
 from bpy.types import Panel
 
-from .operators import _get_selected_collection
+from .operators import _get_selected_collection, _preview
+
+
+_PIVOT_ICON = {
+    'BOUNDING_BOX_CENTER': 'PIVOT_BOUNDBOX',
+    'CURSOR':              'PIVOT_CURSOR',
+    'INDIVIDUAL_ORIGINS':  'PIVOT_INDIVIDUAL',
+    'MEDIAN_POINT':        'PIVOT_MEDIAN',
+    'ACTIVE_ELEMENT':      'PIVOT_ACTIVE',
+}
+_PIVOT_LABEL = {
+    'BOUNDING_BOX_CENTER': "Bounding Box Center",
+    'CURSOR':              "3D Cursor",
+    'INDIVIDUAL_ORIGINS':  "Individual Origins",
+    'MEDIAN_POINT':        "Median Point",
+    'ACTIVE_ELEMENT':      "Active Element",
+}
 
 
 class BCTT_PT_main(Panel):
@@ -33,26 +49,25 @@ class BCTT_PT_main(Panel):
 
         layout.separator(factor=0.5)
 
-        # ── Pivot — read-only info from the Blender viewport header ─────────────
-        _PIVOT_ICON = {
-            'BOUNDING_BOX_CENTER': 'PIVOT_BOUNDBOX',
-            'CURSOR':              'PIVOT_CURSOR',
-            'INDIVIDUAL_ORIGINS':  'PIVOT_INDIVIDUAL',
-            'MEDIAN_POINT':        'PIVOT_MEDIAN',
-            'ACTIVE_ELEMENT':      'PIVOT_ACTIVE',
-        }
-        _PIVOT_LABEL = {
-            'BOUNDING_BOX_CENTER': "Bounding Box Center",
-            'CURSOR':              "3D Cursor",
-            'INDIVIDUAL_ORIGINS':  "Individual Origins",
-            'MEDIAN_POINT':        "Median Point",
-            'ACTIVE_ELEMENT':      "Active Element",
-        }
+        # ── Pivot (read-only) ─────────────────────────────────────────────────
         pivot_id = context.scene.tool_settings.transform_pivot_point
         layout.label(
             text=f"Pivot: {_PIVOT_LABEL.get(pivot_id, pivot_id)}",
             icon=_PIVOT_ICON.get(pivot_id, 'PIVOT_MEDIAN'),
         )
+
+        layout.separator(factor=0.5)
+
+        # ── Real-time preview toggle ──────────────────────────────────────────
+        row = layout.row()
+        row.prop(
+            wm, "bctt_realtime",
+            text="Real-time Preview",
+            icon='PLAY' if not wm.bctt_realtime else 'PAUSE',
+            toggle=True,
+        )
+        if wm.bctt_realtime and _preview:
+            layout.label(text="Previewing — not committed", icon='INFO')
 
         layout.separator(factor=0.5)
 
@@ -86,11 +101,25 @@ class BCTT_PT_main(Panel):
 
         layout.separator()
 
-        # ── Apply button ──────────────────────────────────────────────────────
-        row = layout.row()
-        row.scale_y = 1.6
-        row.enabled = collection is not None
-        row.operator("bctt.apply_transform", icon='OBJECT_ORIGIN')
+        # ── Bake option ───────────────────────────────────────────────────────
+        layout.prop(wm, "bctt_apply_transforms", icon='MESH_DATA')
+
+        layout.separator(factor=0.5)
+
+        # ── Apply / Reset buttons ─────────────────────────────────────────────
+        has_collection = collection is not None
+        in_preview = wm.bctt_realtime and bool(_preview)
+
+        if in_preview:
+            row = layout.row(align=True)
+            row.scale_y = 1.6
+            apply_btn = row.operator("bctt.apply_transform", text="Commit", icon='CHECKMARK')
+            row.operator("bctt.reset_preview", text="", icon='LOOP_BACK')
+        else:
+            row = layout.row()
+            row.scale_y = 1.6
+            row.enabled = has_collection
+            row.operator("bctt.apply_transform", icon='OBJECT_ORIGIN')
 
 
 classes = (BCTT_PT_main,)
